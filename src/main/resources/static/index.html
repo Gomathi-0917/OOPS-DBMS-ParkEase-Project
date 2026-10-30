@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ParkEase | Smart Parking</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<button id="openCodeViewer" class="code-viewer-trigger" type="button" aria-label="Open source code viewer" title="View source code">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5-7 7 7 7M16 5l7 7-7 7M14 3l-4 18"></path><text x="12" y="15.3" text-anchor="middle">&lt;/&gt;</text></svg>
+</button>
+<main class="app-shell">
+<header class="hero">
+  <div><span class="eyebrow">SMART PARKING, SIMPLIFIED</span><h1>ParkEase <span class="brand-mark">PE</span></h1><p>Manage arrivals, exits and your lot in one place.</p></div>
+  <div class="header-tools">
+    <div class="clock" aria-label="Current date and time"><strong id="liveTime">--:--:--</strong><span id="liveDate">Loading date...</span></div>
+    <button class="sound-button" id="soundToggle" type="button" aria-pressed="true">Sound: On</button>
+    <span class="live-pill"><i></i> LOT STATUS LIVE</span>
+  </div>
+</header>
+<section class="summary-grid">
+  <article class="summary-card parked-summary"><span>Vehicles Parked</span><strong id="parked">0</strong><small>Currently in the lot</small></article>
+  <article class="summary-card free-summary"><span>Free Slots</span><strong id="freeSlots">20</strong><small>Ready for arrivals</small></article>
+  <article class="summary-card money-summary"><span>Total Collection</span><strong id="collection">Rs. 0</strong><small>All completed visits</small></article>
+</section>
+<section class="card occupancy-card" aria-label="Parking occupancy">
+  <div class="occupancy-heading"><div><span class="section-kicker">LOT CAPACITY</span><h2>Occupancy</h2></div><strong><span id="occupiedSlots">0</span> / 20 slots</strong></div>
+  <div class="progress-track" role="progressbar" aria-label="Occupied parking slots" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0"><div id="occupancyProgress" class="progress-fill"></div></div>
+  <div class="vehicle-counts"><span><i class="count-bike">B</i> Bikes <b id="bikeCount">0</b></span><span><i class="count-car">C</i> Cars <b id="carCount">0</b></span><span><i class="count-truck">T</i> Trucks <b id="truckCount">0</b></span></div>
+</section>
+<section class="forms-grid">
+  <article class="card">
+    <div class="card-title"><span class="title-icon">P</span><div><h2>Park a vehicle</h2><p>Register an arrival and get a ticket.</p></div></div>
+    <div class="vehicle-choices">
+      <label class="vehicle-choice bike-choice"><input type="radio" name="vehicleType" value="Bike"><span><i class="vehicle-letter">B</i><b>Bike</b><small>Rs. 10 / hr</small></span></label>
+      <label class="vehicle-choice car-choice"><input type="radio" name="vehicleType" value="Car" checked><span><i class="vehicle-letter">C</i><b>Car</b><small>Rs. 30 / hr</small></span></label>
+      <label class="vehicle-choice truck-choice"><input type="radio" name="vehicleType" value="Truck"><span><i class="vehicle-letter">T</i><b>Truck</b><small>Rs. 60 / hr - 2 slots</small></span></label>
+    </div>
+    <form id="parkForm">
+      <label>Owner name<input id="owner" required placeholder="Enter owner name"></label>
+      <label>Plate number<input id="plate" required placeholder="TN37AB1234" pattern="TN[0-9]{2}[A-Za-z]{1,2}[0-9]{4}" title="Use format TN37AB1234"></label>
+      <button class="action-button park-button">Park vehicle <span>+</span></button>
+    </form>
+    <div id="parkResult" class="notice" role="status"></div>
+  </article>
+  <article class="card">
+    <div class="card-title"><span class="title-icon">E</span><div><h2>Vehicle exit</h2><p>Enter the ticket and parking duration.</p></div></div>
+    <form id="exitForm">
+      <label>Ticket number<input id="ticket" type="number" min="1" step="1" required placeholder="e.g. 1042"></label>
+      <label>Parking hours<input id="hours" type="number" min="1" step="1" required placeholder="Hours parked"></label>
+      <p class="hint">Hours over 8 add a flat Rs. 100 charge for every vehicle type.</p>
+    </form>
+    <div id="exitResult" class="notice" role="status"></div>
+    <section id="billPanel" class="bill-panel" hidden aria-live="polite">
+      <div class="bill-heading"><div><span class="section-kicker">LIVE BILL</span><h3>Payment details</h3></div><span id="billStatus" class="bill-status"></span></div>
+      <div id="billDetails" class="bill-details"></div>
+      <button id="openPaymentDetails" class="pay-icon-button" type="button" aria-label="Open payment options" title="Open payment options" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 9h18M7 15h4"></path></svg>
+        <span>Pay</span>
+      </button>
+    </section>
+  </article>
+</section>
+<section class="card slots-section">
+  <div class="section-heading"><div><span class="section-kicker">LIVE OVERVIEW</span><h2>Parking slots</h2><p>Trucks occupy two adjacent spaces.</p></div><button class="refresh-button" id="refresh" type="button">Refresh</button></div>
+  <div id="slots" class="slots" aria-label="Parking slots"></div>
+  <div class="legend"><span><i class="free-dot"></i> Free</span><span><i class="busy-dot"></i> Occupied</span></div>
+</section>
+<section class="card history-card">
+  <div class="section-heading history-heading"><div><span class="section-kicker">VISIT RECORDS</span><h2>Parking history</h2><p>All parked and completed visits, newest first.</p></div><label class="search-box"><span>Find</span><input id="historySearch" type="search" placeholder="Search by plate"></label></div>
+  <div class="table-wrap"><table><thead><tr><th>Ticket No</th><th>Plate</th><th>Owner</th><th>Type</th><th>Slot</th><th>Entry Time</th><th>Exit Time</th><th>Hours</th><th>Charge</th><th>Status</th></tr></thead><tbody id="historyRows"><tr><td colspan="10" class="empty-row">Loading history...</td></tr></tbody></table></div>
+</section>
+<section class="card parking-quote" aria-label="Parking quote">
+  <span class="section-kicker">A BETTER WAY TO ARRIVE</span>
+  <blockquote>"Park smart, arrive calm, and leave room for the next journey."</blockquote>
+  <p>Every smooth trip starts with a good place to park.</p>
+</section>
+<footer>ParkEase - Smart parking management</footer>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<canvas id="flowerCanvas" aria-hidden="true"></canvas>
+<dialog id="resultDialog" class="result-dialog" aria-labelledby="dialogTitle">
+  <button class="dialog-close" id="dialogClose" type="button" aria-label="Close popup">X</button>
+  <section id="ticketPanel" class="ticket-panel" hidden><div class="ticket-check">OK</div><span class="section-kicker">PARKING CONFIRMED</span><h2 id="dialogTitle">Your ticket is ready</h2><p>Keep this ticket number for vehicle exit.</p><strong class="ticket-number" id="ticketNumber"></strong><p id="ticketSlot"></p><button class="action-button dialog-action" id="ticketDone" type="button">Done</button></section>
+  <section id="receiptPanel" class="receipt-panel" hidden><span class="section-kicker">PAYMENT SUCCESSFUL</span><div class="success-check" aria-label="Payment successful"><svg viewBox="0 0 64 64" role="img" aria-hidden="true"><circle cx="32" cy="32" r="29"></circle><path d="M17 33l10 10 21-23"></path></svg></div><h2 id="receiptTitle">Payment Successful</h2><div id="receiptContent" class="receipt-content"></div><button class="action-button dialog-action" id="printReceipt" type="button">Print Receipt</button></section>
+</dialog>
+<dialog id="paymentDialog" class="payment-dialog" aria-labelledby="paymentDialogTitle">
+  <button class="dialog-close" id="closePaymentDetails" type="button" aria-label="Close payment options">X</button>
+  <span class="section-kicker">SIMULATED PAYMENT</span>
+  <h2 id="paymentDialogTitle">How would you like to pay?</h2>
+  <p class="payment-dialog-hint">Choose an option. No real payment will be processed.</p>
+  <div class="payment-options">
+    <label class="payment-option"><input type="radio" name="paymentMethod" value="Cash" checked><span><b>Cash</b><small>Pay cash at the parking counter.</small></span></label>
+    <label class="payment-option"><input type="radio" name="paymentMethod" value="UPI"><span><b>UPI</b><small>Scan the QR or pay at the counter.</small></span></label>
+    <label class="payment-option"><input type="radio" name="paymentMethod" value="Card"><span><b>Card</b><small>Pay by card at the parking counter.</small></span></label>
+  </div>
+  <div id="selectedPaymentHint" class="selected-payment-hint">Pay cash at the parking counter.</div>
+  <div id="paymentDialogStatus" class="payment-dialog-status" role="status"></div>
+  <button id="payNow" class="action-button exit-button" type="button" disabled>Pay Now</button>
+</dialog>
+<dialog id="codeDialog" class="code-dialog" aria-labelledby="codeViewerTitle">
+  <header class="code-viewer-header"><div><span class="section-kicker">PARKEASE SOURCE</span><h2 id="codeViewerTitle">Code Viewer</h2></div><button id="closeCodeViewer" class="code-close" type="button" aria-label="Close code viewer">Close</button></header>
+  <nav id="codeCategoryTabs" class="code-category-tabs" aria-label="Source categories" role="tablist"></nav>
+  <div class="code-content">
+    <nav id="codeFileTabs" class="code-file-tabs" aria-label="Source files" role="tablist"></nav>
+    <div class="code-toolbar"><span id="codeFileName">Select a source file</span><button id="copySource" class="copy-source" type="button" disabled>Copy</button></div>
+    <div class="code-scroll"><pre><code id="sourceCode"></code></pre></div>
+    <div id="codeViewerStatus" class="code-viewer-status" role="status" aria-live="polite"></div>
+  </div>
+</dialog>
+<script src="/script.js"></script>
+</body>
+</html>
